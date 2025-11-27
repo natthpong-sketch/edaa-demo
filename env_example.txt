@@ -1,0 +1,6 @@
+# สร้างไฟล์ .env.local ในเครื่องของคุณสำหรับ Development
+# หรือตั้งค่า Environment Variables ใน Vercel (Project Settings -> Environment Variables)
+
+# ใช้ชื่อใดชื่อหนึ่งด้านล่าง (ระบบรองรับทั้งคู่)
+API_KEY=AIzaSy...
+VITE_API_KEY=AIzaSy...
