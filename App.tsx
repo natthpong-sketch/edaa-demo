@@ -71,26 +71,63 @@ function App() {
   };
 
   const handleExportWord = () => {
-    // Create a basic HTML structure for Word
-    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' " +
-      "xmlns:w='urn:schemas-microsoft-com:office:word' " +
-      "xmlns='http://www.w3.org/TR/REC-html40'>" +
-      "<head><meta charset='utf-8'><title>Export HTML To Doc</title></head><body>";
-    const footer = "</body></html>";
-    
-    // Replace newlines with <br> for HTML rendering in Word if strictly needed, 
-    // but <pre> or pre-wrap usually works. For Word, explicit paragraphs are safer.
-    const content = generatedLetter.split('\n').map(line => `<p>${line}</p>`).join('');
-    
-    const sourceHTML = header + content + footer;
+    // เตรียมเนื้อหา HTML พร้อมตกแต่ง Style สำหรับ Word
+    // ใช้ <p> แทน \n เพื่อให้ Word จัดระยะบรรทัดได้ถูกต้อง
+    const contentLines = generatedLetter.split('\n').map(line => {
+        if (!line.trim()) return '<p>&nbsp;</p>'; // บรรทัดว่าง
+        return `<p style="margin-bottom: 0pt; line-height: 1.5;">${line}</p>`;
+    }).join('');
 
-    const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
-    const fileDownload = document.createElement("a");
-    document.body.appendChild(fileDownload);
-    fileDownload.href = source;
-    fileDownload.download = 'บันทึกข้อความ.doc';
-    fileDownload.click();
-    document.body.removeChild(fileDownload);
+    const header = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office'
+            xmlns:w='urn:schemas-microsoft-com:office:word'
+            xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <meta charset='utf-8'>
+        <title>บันทึกข้อความ</title>
+        <style>
+          /* Import Font อาจจะไม่แสดงผลใน Word ถ้าเครื่องผู้ใช้ไม่มี แต่ใส่ไว้เพื่อความครบถ้วน */
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap');
+          
+          body {
+            font-family: 'Sarabun', 'Angsana New', sans-serif;
+            font-size: 16pt;
+          }
+          /* ตั้งค่าตารางพื้นฐาน เผื่อ AI ส่งตารางมา */
+          table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+          td, th { border: 1px solid #000; padding: 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="WordSection1">
+    `;
+
+    const footer = `
+        </div>
+      </body>
+      </html>
+    `;
+    
+    const sourceHTML = header + contentLines + footer;
+
+    // สร้าง Blob พร้อมระบุ BOM (\ufeff) เพื่อรองรับภาษาไทย
+    const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
+    
+    // สร้าง URL สำหรับ Download
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // ตั้งชื่อไฟล์ตามชื่อผู้ขอ หรือวันที่
+    const filename = `บันทึกข้อความ_${formData.requesterName || 'draft'}.doc`;
+    link.download = filename;
+    
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
